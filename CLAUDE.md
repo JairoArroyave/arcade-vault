@@ -36,3 +36,7 @@ npx skills@latest add Klerith/fernando-skills
 ```
 
 If these skills/commands aren't present yet in `.claude/`, ask the user before improvising a different workflow.
+
+
+## Skills 
+usa siempre /frontend-design para diseñar la interfaz de usuario
