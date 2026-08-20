@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e 'let d=\"\";process.stdin.on(\"data\",c=>d+=c);process.stdin.on(\"end\",()=>{try{const j=JSON.parse(d);const f=(j.tool_response&&j.tool_response.filePath)||(j.tool_input&&j.tool_input.file_path)||\"\";process.stdout.write(f)}catch(e){}})' | { read -r f; if [ -n \"$f\" ] && [ -f \"$f\" ]; then npx --no-install prettier --write --ignore-unknown \"$f\" </dev/null 2>/dev/null; case \"$f\" in *.js|*.jsx|*.ts|*.tsx) npx --no-install eslint --fix --no-warn-ignored \"$f\" </dev/null 2>/dev/null;; esac; fi; } || true"
+          }
+        ]
+      }
+    ]
+  }
+}
