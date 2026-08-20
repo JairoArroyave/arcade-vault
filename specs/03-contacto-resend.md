@@ -1,6 +1,6 @@
 # SPEC 03 — Envío real de correo en el formulario de contacto (Resend)
 
-> **Status:** approved
+> **Status:** Implemented
 > **Depends on:** SPEC 02
 > **Date:** 2026-08-19
 > **Objective:** Conectar el formulario de contacto de `/about` (ya portado 1:1 del template en el spec 02, 100% mock) a un envío real de correo electrónico vía Resend, sin cambiar el diseño existente salvo por un nuevo estado de carga y un nuevo estado de error dentro del mismo bloque terminal.
