@@ -39,15 +39,36 @@ export default function AboutPage() {
   const [form, setForm] = useState<ContactForm>({ name: "", email: "", msg: "" });
   const [sent, setSent] = useState<string | null>(null);
   const [shake, setShake] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.email.trim() || !form.msg.trim()) {
       setShake(true);
       setTimeout(() => setShake(false), 400);
       return;
     }
-    setSent(form.name.trim());
+
+    setSending(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = (await res.json()) as { ok: boolean; error?: string };
+      if (data.ok) {
+        setSent(form.name.trim());
+      } else {
+        setError(data.error ?? "No se pudo transmitir el paquete.");
+      }
+    } catch {
+      setError("No se pudo transmitir el paquete.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -108,39 +129,7 @@ export default function AboutPage() {
           </div>
 
           <form className={"contact-form" + (shake ? " shake" : "")} onSubmit={onSubmit}>
-            {!sent ? (
-              <>
-                <div className="field">
-                  <label>NOMBRE</label>
-                  <input
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="px_kai"
-                  />
-                </div>
-                <div className="field">
-                  <label>CORREO ELECTRÓNICO</label>
-                  <input
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    placeholder="jugador@vault.gg"
-                  />
-                </div>
-                <div className="field">
-                  <label>MENSAJE</label>
-                  <textarea
-                    rows={5}
-                    value={form.msg}
-                    onChange={(e) => setForm({ ...form, msg: e.target.value })}
-                    placeholder="Cuéntanos qué tienes en mente…"
-                  ></textarea>
-                </div>
-                <button className="btn xl press" type="submit" style={{ width: "100%" }}>
-                  ▶ &nbsp;ENVIAR MENSAJE
-                </button>
-              </>
-            ) : (
+            {sent ? (
               <div className="terminal-success">
                 <div className="term-bar">
                   <span className="dot r"></span>
@@ -173,6 +162,69 @@ export default function AboutPage() {
                   </div>
                 </div>
               </div>
+            ) : error ? (
+              <div className="terminal-success">
+                <div className="term-bar">
+                  <span className="dot r"></span>
+                  <span className="dot y"></span>
+                  <span className="dot g"></span>
+                  <span className="term-title">VAULT-OS // TERMINAL</span>
+                </div>
+                <div className="term-body">
+                  <div className="line">
+                    <span className="prompt">vault@arcade:~$</span> ./send_message --to=team
+                  </div>
+                  <div className="line dim">[OK] Conectando con servidor…</div>
+                  <div className="line dim">[OK] Validando contenido…</div>
+                  <div className="line error">
+                    [FAIL] No se pudo transmitir el paquete.
+                    <span className="caret">_</span>
+                  </div>
+                  <div className="line dim">{error}</div>
+                  <div style={{ marginTop: 18 }}>
+                    <button className="btn ghost" type="button" onClick={() => setError(null)}>
+                      REINTENTAR
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="field">
+                  <label>NOMBRE</label>
+                  <input
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="px_kai"
+                  />
+                </div>
+                <div className="field">
+                  <label>CORREO ELECTRÓNICO</label>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    placeholder="jugador@vault.gg"
+                  />
+                </div>
+                <div className="field">
+                  <label>MENSAJE</label>
+                  <textarea
+                    rows={5}
+                    value={form.msg}
+                    onChange={(e) => setForm({ ...form, msg: e.target.value })}
+                    placeholder="Cuéntanos qué tienes en mente…"
+                  ></textarea>
+                </div>
+                <button
+                  className="btn xl press"
+                  type="submit"
+                  style={{ width: "100%" }}
+                  disabled={sending}
+                >
+                  {sending ? <>▶ &nbsp;ENVIANDO…</> : <>▶ &nbsp;ENVIAR MENSAJE</>}
+                </button>
+              </>
             )}
           </form>
         </div>
