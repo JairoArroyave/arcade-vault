@@ -710,6 +710,13 @@ a { color: inherit; text-decoration: none; }
   50% { transform: translate(20px, 10px); }
 }
 
+/* real Asteroids game: canvas lógico 800x600 (4:3), escalado a .crt-screen (también 4:3) */
+.asteroids-arena canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 /* game over modal */
 .modal-bd {
   position: fixed; inset: 0; z-index: 80;
