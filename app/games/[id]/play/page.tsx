@@ -1,36 +1,48 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, notFound } from "next/navigation";
 import { getGameById } from "@/lib/games";
 import { addStoredScore } from "@/lib/storage";
 import { useAuth } from "@/app/providers";
+import AsteroidsGame from "@/components/games/AsteroidsGame";
 
 export default function GamePlayerPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
   const game = getGameById(id);
+  const isAsteroids = game?.id === "rocas";
 
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
+  const [asteroidsLevel, setAsteroidsLevel] = useState(1);
   const [paused, setPaused] = useState(false);
   const [over, setOver] = useState(false);
   const [name, setName] = useState(() => (user ? user.name : "INVITADO"));
   const [saved, setSaved] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
 
-  // Nivel derivado del puntaje: sube cada 2500 puntos, sin necesitar estado propio.
-  const level = 1 + Math.floor(score / 2500);
+  // Nivel derivado del puntaje para los juegos simulados; Asteroids reporta su nivel real.
+  const level = isAsteroids ? asteroidsLevel : 1 + Math.floor(score / 2500);
+
+  // "over" más reciente, legible desde el callback onGameOver del motor real
+  // sin que ese callback dependa de recrearse en cada cambio de "over".
+  const overRef = useRef(over);
+  useEffect(() => {
+    overRef.current = over;
+  }, [over]);
 
   useEffect(() => {
+    if (isAsteroids) return; // Asteroids reporta su propio score real vía callbacks
     if (over || paused) return;
     const t = setInterval(
       () => setScore((s) => s + Math.floor(10 + Math.random() * 90)),
       220,
     );
     return () => clearInterval(t);
-  }, [over, paused]);
+  }, [over, paused, isAsteroids]);
 
   if (!game) {
     notFound();
@@ -40,9 +52,17 @@ export default function GamePlayerPage() {
   const restart = () => {
     setScore(0);
     setLives(3);
+    setAsteroidsLevel(1);
     setPaused(false);
     setOver(false);
     setSaved(false);
+    setResetKey((k) => k + 1);
+  };
+
+  const handleAsteroidsGameOver = (finalScore: number) => {
+    if (overRef.current) return; // ya se cerró manualmente con el botón FIN
+    setScore(finalScore);
+    setOver(true);
   };
 
   return (
@@ -83,13 +103,26 @@ export default function GamePlayerPage() {
 
       <div className="crt">
         <div className="crt-screen">
-          <div className="game-arena">
-            <div className="grid-floor"></div>
-            <div className="enemy e1"></div>
-            <div className="enemy e2"></div>
-            <div className="enemy e3"></div>
-            <div className="player-ship"></div>
-          </div>
+          {isAsteroids ? (
+            <div className="game-arena asteroids-arena">
+              <AsteroidsGame
+                paused={paused}
+                onScoreChange={setScore}
+                onLivesChange={setLives}
+                onLevelChange={setAsteroidsLevel}
+                onGameOver={handleAsteroidsGameOver}
+                resetKey={resetKey}
+              />
+            </div>
+          ) : (
+            <div className="game-arena">
+              <div className="grid-floor"></div>
+              <div className="enemy e1"></div>
+              <div className="enemy e2"></div>
+              <div className="enemy e3"></div>
+              <div className="player-ship"></div>
+            </div>
+          )}
           {paused && (
             <div
               className="crt-content"
