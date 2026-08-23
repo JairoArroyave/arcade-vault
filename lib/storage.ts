@@ -1,16 +1,8 @@
 // Persistencia mock en localStorage, sin versionar (igual que reference/templates/app.jsx)
 
 const USER_KEY = "av_user";
-const SCORES_KEY = "av_scores";
 
 export type StoredUser = { name: string };
-
-export type StoredScoreEntry = {
-  game: string;
-  score: number;
-  name: string;
-  at: number;
-};
 
 // Cache + suscripción para exponer av_user como un external store
 // (useSyncExternalStore), evitando leer localStorage directamente en un
@@ -74,24 +66,4 @@ export function setStoredUser(user: StoredUser | null): void {
 
 export function clearStoredUser(): void {
   setStoredUser(null);
-}
-
-export function getStoredScores(): StoredScoreEntry[] {
-  if (typeof window === "undefined") return [];
-  try {
-    return JSON.parse(window.localStorage.getItem(SCORES_KEY) || "[]");
-  } catch {
-    return [];
-  }
-}
-
-export function addStoredScore(entry: Omit<StoredScoreEntry, "at">): void {
-  if (typeof window === "undefined") return;
-  try {
-    const all = getStoredScores();
-    all.push({ ...entry, at: Date.now() });
-    window.localStorage.setItem(SCORES_KEY, JSON.stringify(all));
-  } catch {
-    // localStorage no disponible: el puntaje no persiste, pero la app sigue funcionando.
-  }
 }

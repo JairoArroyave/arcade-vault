@@ -1,16 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getGameById } from "@/lib/games";
-import { seededScores } from "@/lib/leaderboard";
+import { getScoresForGame } from "@/lib/leaderboard";
 
 export default async function GameDetailPage({
   params,
 }: PageProps<"/games/[id]">) {
   const { id } = await params;
-  const game = getGameById(id);
+  const game = await getGameById(id);
   if (!game) notFound();
 
-  const scores = seededScores(id.length * 17 + 3, 10);
+  const scores = await getScoresForGame(id, 10);
 
   return (
     <div className="av-detail fade-in">
