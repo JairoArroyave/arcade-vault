@@ -1,4 +1,9 @@
-// Generador de leaderboard mock portado de reference/templates/data.jsx
+// Lecturas del leaderboard real contra la tabla `scores` de Supabase (spec 06).
+// `saveScore` (escritura desde un Client Component) vive aparte en
+// lib/leaderboard-client.ts para no arrastrar lib/supabase/server.ts
+// (depende de next/headers) al bundle de cliente.
+
+import { createClient } from "@/lib/supabase/server";
 
 export type ScoreRow = {
   rank: number;
@@ -7,30 +12,54 @@ export type ScoreRow = {
   date: string;
 };
 
-export const PLAYERS = [
-  "PX_KAI", "NEONFOX", "Z3R0COOL", "M00NRYU", "VAULT_07", "GLITCHA",
-  "ATARI_KID", "CYBER_LU", "MAGENTA88", "SCANLINE", "BIT_LORD", "ARKADYA",
-  "DROID_X", "RGB_QUEEN", "PIXEL_DAD", "RETROVIRA", "VECTORX", "JOY_STK",
-];
+type ScoreRecord = {
+  game: string;
+  score: number;
+  name: string;
+  created_at: string;
+};
 
-export function seededScores(seed: number, count = 12): ScoreRow[] {
-  let s = seed;
-  const rand = () => (s = (s * 9301 + 49297) % 233280) / 233280;
-  const used = new Set<string>();
-  const rows: Omit<ScoreRow, "rank">[] = [];
-  for (let i = 0; i < count; i++) {
-    let name: string;
-    do {
-      name = PLAYERS[Math.floor(rand() * PLAYERS.length)];
-    } while (used.has(name) && used.size < PLAYERS.length);
-    used.add(name);
-    const base = Math.floor(50000 + rand() * 250000);
-    const score = base - i * Math.floor(2000 + rand() * 4000);
-    const day = String(1 + Math.floor(rand() * 28)).padStart(2, "0");
-    const mon = String(1 + Math.floor(rand() * 12)).padStart(2, "0");
-    rows.push({ name, score: Math.max(score, 1000), date: `${day}/${mon}/2026` });
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  return `${day}/${month}/${d.getFullYear()}`;
+}
+
+export async function getScoresForGame(
+  gameId: string,
+  limit = 10,
+): Promise<ScoreRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("scores")
+    .select("game, score, name, created_at")
+    .eq("game", gameId)
+    .order("score", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+
+  return (data as ScoreRecord[]).map((row, i) => ({
+    rank: i + 1,
+    name: row.name,
+    score: row.score,
+    date: formatDate(row.created_at),
+  }));
+}
+
+export async function getBestScores(): Promise<Record<string, number>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("scores")
+    .select("game, score")
+    .order("score", { ascending: false });
+
+  if (error) throw error;
+
+  const best: Record<string, number> = {};
+  for (const row of data as Pick<ScoreRecord, "game" | "score">[]) {
+    if (!(row.game in best)) best[row.game] = row.score;
   }
-  return rows
-    .sort((a, b) => b.score - a.score)
-    .map((r, i) => ({ ...r, rank: i + 1 }));
+  return best;
 }
