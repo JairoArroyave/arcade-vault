@@ -1,6 +1,6 @@
 # SPEC 07 — Juego real de Tetris en el reproductor
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 05, SPEC 06
 > **Date:** 2026-08-24
 > **Objective:** Reemplazar la arena decorativa del reproductor simulado en `/games/caida/play` por el juego real de Tetris (adaptado de `reference/juegos/03/claude-tetris/game.js`), integrado al HUD/pausa/modal ya existentes y al leaderboard real de Supabase, disparando en el mismo spec el refactor único que generaliza el reproductor para soportar más de un juego real.
