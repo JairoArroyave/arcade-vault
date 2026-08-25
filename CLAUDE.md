@@ -11,7 +11,7 @@ Arcade Vault ("arcade.-vault") — a retro-arcade platform (Spanish UI, neon/CRT
 Implemented so far (specs 01–09):
 
 - Game catalog + detail + player + hall of fame screens.
-- Four games are **actually implemented** (real canvas engines, real scoring): `rocas` (Asteroids), `caida` (Tetris), `bloque-buster` (Arkanoid), `serpentina` (Snake). The remaining four catalog entries (`gloton`, `invasores`, `ranaria`, `duelo-pixel`) are **not implemented — just a demo**: a decorative arena with a simulated score ticker (CSS sprites, `setInterval`), no engine, no code under `lib/games/`. See `reference/implemented-games.md` for the full per-game breakdown (controls, scoring, HUD capabilities, assets).
+- Four games are **actually implemented** (real canvas engines, real scoring): `rocas` (Asteroids), `caida` (Tetris), `bloque-buster` (Arkanoid), `serpentina` (Snake). The remaining four catalog entries (`gloton`, `invasores`, `ranaria`, `duelo-pixel`) are **not implemented — just a demo**: a decorative arena with a simulated score ticker (CSS sprites, `setInterval`), no engine, no code under `lib/games/`. See `reference/implemented-games.md` for the full per-game breakdown (controls, scoring, HUD capabilities, assets), and `reference/game-sugestions-todo.md` for the queue of candidate games already proposed (the `game-planner` agent's memory — see Workflow).
 - Real catalog + leaderboard on Supabase (`games` / `scores` tables, anon read + anon insert via RLS).
 - Contact form emailing through Resend (`POST /api/contact`).
 - Mock "login": a name in `localStorage` (`av_user`), no Supabase Auth.
@@ -87,6 +87,12 @@ Skills installed in `.claude/skills/` (also mirrored in `.agents/skills/`, track
 - `/spec`, `/spec-impl` — from [Klerith/fernando-skills](https://github.com/Klerith/fernando-skills) (`npx skills@latest add Klerith/fernando-skills`).
 - `/frontend-design` — from `anthropics/skills`. **Always use it when designing or reshaping UI.**
 - `/integrar-juego` — project-local skill. Writes the spec for porting or inventing a game wired to the shared player and the real leaderboard. Its `contract.md` is the authoritative engine/wrapper/registry contract summarized above — read it before writing any game code, and update it if the contract changes. The skill only writes a `Draft` spec; implementation is always `/spec-impl` afterwards.
+
+Agents installed in `.claude/agents/` (project scope — they don't exist outside this repo):
+
+- `game-planner` — decides **which game the catalog should get next**. Reads the real state (`components/games/registry.ts`, the `insert into games` block of `supabase/schema.sql`, `lib/games/`, `specs/`, `reference/juegos/`) and scores candidates on catalog fit, viability under the engine/wrapper contract, mechanical diversity, leaderboard-worthy scoring, effort and assets. It prefers filling one of the four remaining decorative slots (no SQL) over proposing a new `games` row. Its **memory is `reference/game-sugestions-todo.md`** — the only file it may write — so it never repeats a suggestion across invocations; each entry carries a status (`Pendiente` / `En spec` / `Implementada` / `Descartada`). It writes no spec and no code: it ends by handing over the exact `/integrar-juego` command. No network access.
+
+The full chain for adding a game is `game-planner` (which game) → `/integrar-juego` (Draft spec) → `/spec-impl` (implementation on its own branch).
 
 Because `scores` is generic by `game` id, a new game needs no schema change — only a row in `games` (if it doesn't fit an existing catalog slot) and a `saveScore()` call.
 
