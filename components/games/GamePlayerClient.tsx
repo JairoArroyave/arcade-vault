@@ -6,16 +6,16 @@ import { useRouter } from "next/navigation";
 import type { Game } from "@/lib/games";
 import { saveScore } from "@/lib/leaderboard-client";
 import { useAuth } from "@/app/providers";
-import AsteroidsGame from "@/components/games/AsteroidsGame";
+import { REAL_GAMES } from "@/components/games/registry";
 
 export default function GamePlayerClient({ game }: { game: Game }) {
   const router = useRouter();
   const { user } = useAuth();
-  const isAsteroids = game.id === "rocas";
+  const realGame = REAL_GAMES[game.id];
 
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
-  const [asteroidsLevel, setAsteroidsLevel] = useState(1);
+  const [realLevel, setRealLevel] = useState(1);
   const [paused, setPaused] = useState(false);
   const [over, setOver] = useState(false);
   const [name, setName] = useState(() => (user ? user.name : "INVITADO"));
@@ -24,8 +24,8 @@ export default function GamePlayerClient({ game }: { game: Game }) {
   const [saveError, setSaveError] = useState(false);
   const [resetKey, setResetKey] = useState(0);
 
-  // Nivel derivado del puntaje para los juegos simulados; Asteroids reporta su nivel real.
-  const level = isAsteroids ? asteroidsLevel : 1 + Math.floor(score / 2500);
+  // Nivel derivado del puntaje para los juegos simulados; los juegos reales reportan su nivel real.
+  const level = realGame ? realLevel : 1 + Math.floor(score / 2500);
 
   // "over" más reciente, legible desde el callback onGameOver del motor real
   // sin que ese callback dependa de recrearse en cada cambio de "over".
@@ -35,20 +35,20 @@ export default function GamePlayerClient({ game }: { game: Game }) {
   }, [over]);
 
   useEffect(() => {
-    if (isAsteroids) return; // Asteroids reporta su propio score real vía callbacks
+    if (realGame) return; // los juegos reales reportan su propio score real vía callbacks
     if (over || paused) return;
     const t = setInterval(
       () => setScore((s) => s + Math.floor(10 + Math.random() * 90)),
       220,
     );
     return () => clearInterval(t);
-  }, [over, paused, isAsteroids]);
+  }, [over, paused, realGame]);
 
   const endGame = () => setOver(true);
   const restart = () => {
     setScore(0);
     setLives(3);
-    setAsteroidsLevel(1);
+    setRealLevel(1);
     setPaused(false);
     setOver(false);
     setSaved(false);
@@ -56,7 +56,7 @@ export default function GamePlayerClient({ game }: { game: Game }) {
     setResetKey((k) => k + 1);
   };
 
-  const handleAsteroidsGameOver = (finalScore: number) => {
+  const handleRealGameOver = (finalScore: number) => {
     if (overRef.current) return; // ya se cerró manualmente con el botón FIN
     setScore(finalScore);
     setOver(true);
@@ -89,14 +89,18 @@ export default function GamePlayerClient({ game }: { game: Game }) {
             <div className="l">Puntuación</div>
             <div className="v">{score.toLocaleString("es-ES")}</div>
           </div>
-          <div className="hud-stat lives">
-            <div className="l">Vidas</div>
-            <div className="v">{"♥ ".repeat(lives).trim() || "—"}</div>
-          </div>
-          <div className="hud-stat level">
-            <div className="l">Nivel</div>
-            <div className="v">{String(level).padStart(2, "0")}</div>
-          </div>
+          {(!realGame || realGame.capabilities.hasLives) && (
+            <div className="hud-stat lives">
+              <div className="l">Vidas</div>
+              <div className="v">{"♥ ".repeat(lives).trim() || "—"}</div>
+            </div>
+          )}
+          {(!realGame || realGame.capabilities.hasLevel) && (
+            <div className="hud-stat level">
+              <div className="l">Nivel</div>
+              <div className="v">{String(level).padStart(2, "0")}</div>
+            </div>
+          )}
         </div>
         <div className="hud-actions">
           <button className="btn yellow" onClick={() => setPaused((p) => !p)}>
@@ -113,14 +117,14 @@ export default function GamePlayerClient({ game }: { game: Game }) {
 
       <div className="crt">
         <div className="crt-screen">
-          {isAsteroids ? (
-            <div className="game-arena asteroids-arena">
-              <AsteroidsGame
+          {realGame ? (
+            <div className="game-arena">
+              <realGame.Component
                 paused={paused}
                 onScoreChange={setScore}
                 onLivesChange={setLives}
-                onLevelChange={setAsteroidsLevel}
-                onGameOver={handleAsteroidsGameOver}
+                onLevelChange={setRealLevel}
+                onGameOver={handleRealGameOver}
                 resetKey={resetKey}
               />
             </div>

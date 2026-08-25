@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { createAsteroidsEngine } from "@/lib/games/asteroids/engine";
+import { createTetrisEngine } from "@/lib/games/tetris/engine";
 import type { GameEngine } from "@/lib/games/types";
 import type { RealGameProps } from "@/components/games/types";
 
-export default function AsteroidsGame({
+export default function TetrisGame({
   paused,
   onScoreChange,
   onLivesChange,
@@ -37,7 +37,7 @@ export default function AsteroidsGame({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const engine = createAsteroidsEngine(canvas, {
+    const engine = createTetrisEngine(canvas, {
       onScoreChange: (score) => callbacksRef.current.onScoreChange(score),
       onLivesChange: (lives) => callbacksRef.current.onLivesChange?.(lives),
       onLevelChange: (level) => callbacksRef.current.onLevelChange?.(level),
@@ -55,5 +55,5 @@ export default function AsteroidsGame({
     engineRef.current?.setPaused(paused);
   }, [paused]);
 
-  return <canvas ref={canvasRef} width={800} height={600} />;
+  return <canvas ref={canvasRef} width={450} height={600} />;
 }

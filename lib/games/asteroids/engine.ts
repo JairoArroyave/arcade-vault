@@ -2,18 +2,7 @@
 // en vez de document/window a nivel de módulo, todo vive dentro de createAsteroidsEngine()
 // para poder crear y destruir instancias al montar/desmontar el componente React.
 
-export type AsteroidsCallbacks = {
-  onScoreChange: (score: number) => void;
-  onLivesChange: (lives: number) => void;
-  onLevelChange: (level: number) => void;
-  onGameOver: (finalScore: number) => void;
-};
-
-export type AsteroidsEngine = {
-  setPaused(paused: boolean): void;
-  reset(): void;
-  destroy(): void;
-};
+import type { GameCallbacks, GameEngine } from "@/lib/games/types";
 
 const W = 800;
 const H = 600;
@@ -36,8 +25,8 @@ function getContext2D(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
 
 export function createAsteroidsEngine(
   canvas: HTMLCanvasElement,
-  callbacks: AsteroidsCallbacks,
-): AsteroidsEngine {
+  callbacks: GameCallbacks,
+): GameEngine {
   const ctx = getContext2D(canvas);
 
   const keys: Record<string, boolean> = {};
@@ -386,11 +375,11 @@ export function createAsteroidsEngine(
   }
   function setLives(next: number) {
     lives = next;
-    callbacks.onLivesChange(lives);
+    callbacks.onLivesChange?.(lives);
   }
   function setLevel(next: number) {
     level = next;
-    callbacks.onLevelChange(level);
+    callbacks.onLevelChange?.(level);
   }
 
   function spawnAsteroids(count: number) {
