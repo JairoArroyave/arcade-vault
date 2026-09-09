@@ -20,7 +20,7 @@ caen al estilo por defecto), y `CATS` es unión cerrada en `components/GameLibra
 
 | #   | Juego                   | Slot                        | Estado    | Fecha      |
 | --- | ----------------------- | --------------------------- | --------- | ---------- |
-| S01 | Frogger                 | `ranaria`                   | Pendiente | 2026-08-25 |
+| S01 | Frogger                 | `ranaria`                   | Implementada | 2026-08-25 |
 | S02 | Pac-Man                 | `gloton`                    | Pendiente | 2026-08-25 |
 | S03 | Space Invaders          | `invasores`                 | Pendiente | 2026-08-25 |
 | S04 | Duelo de esgrima vs CPU | `duelo-pixel`               | Pendiente | 2026-08-25 |
@@ -46,7 +46,7 @@ caen al estilo por defecto), y `CATS` es unión cerrada en `components/GameLibra
 
 ### S01 — Frogger → `ranaria`
 
-- **Estado:** Pendiente
+- **Estado:** Implementada
 - **Fecha:** 2026-08-25
 - **Slot:** `ranaria` (ARCADE · green · cover-rana) — fila existente, sin SQL
 - **Fuente:** sin fuente → diseño desde cero (no queda material portable libre en

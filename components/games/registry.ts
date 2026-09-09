@@ -4,6 +4,7 @@ import AsteroidsGame from "@/components/games/AsteroidsGame";
 import TetrisGame from "@/components/games/TetrisGame";
 import ArkanoidGame from "@/components/games/ArkanoidGame";
 import SerpentinaGame from "@/components/games/SerpentinaGame";
+import RanariaGame from "@/components/games/RanariaGame";
 
 type RealGameEntry = {
   Component: ComponentType<RealGameProps>;
@@ -15,4 +16,5 @@ export const REAL_GAMES: Record<string, RealGameEntry> = {
   caida: { Component: TetrisGame, capabilities: { hasLives: false, hasLevel: true } },
   "bloque-buster": { Component: ArkanoidGame, capabilities: { hasLives: true, hasLevel: false } },
   serpentina: { Component: SerpentinaGame, capabilities: { hasLives: false, hasLevel: true } },
+  ranaria: { Component: RanariaGame, capabilities: { hasLives: true, hasLevel: true } },
 };
