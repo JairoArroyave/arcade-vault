@@ -1,13 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getGameById } from "@/lib/games";
+import { getGameById, type Game } from "@/lib/games";
 import { getScoresForGame } from "@/lib/leaderboard";
+import { FaultScreen } from "@/components/FaultScreen";
 
 export default async function GameDetailPage({
   params,
 }: PageProps<"/games/[id]">) {
   const { id } = await params;
-  const game = await getGameById(id);
+
+  let game: Game | undefined;
+  try {
+    game = await getGameById(id);
+  } catch (e) {
+    return <FaultScreen message={(e as Error).message} />;
+  }
   if (!game) notFound();
 
   const scores = await getScoresForGame(id, 10);

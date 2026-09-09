@@ -2,6 +2,10 @@
 // `saveScore` (escritura desde un Client Component) vive aparte en
 // lib/leaderboard-client.ts para no arrastrar lib/supabase/server.ts
 // (depende de next/headers) al bundle de cliente.
+//
+// Estas lecturas nunca lanzan: un leaderboard caído degrada a vacío en vez de
+// tumbar la página. El catálogo y los juegos no dependen de las puntuaciones
+// para funcionar, así que con Supabase inaccesible se sigue pudiendo jugar.
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -38,7 +42,12 @@ export async function getScoresForGame(
     .order("score", { ascending: false })
     .limit(limit);
 
-  if (error) throw error;
+  if (error) {
+    console.warn(
+      `[leaderboard] no se pudieron leer las puntuaciones de "${gameId}": ${error.message}`,
+    );
+    return [];
+  }
 
   return (data as ScoreRecord[]).map((row, i) => ({
     rank: i + 1,
@@ -55,7 +64,12 @@ export async function getBestScores(): Promise<Record<string, number>> {
     .select("game, score")
     .order("score", { ascending: false });
 
-  if (error) throw error;
+  if (error) {
+    console.warn(
+      `[leaderboard] no se pudieron leer los récords: ${error.message}`,
+    );
+    return {};
+  }
 
   const best: Record<string, number> = {};
   for (const row of data as Pick<ScoreRecord, "game" | "score">[]) {
