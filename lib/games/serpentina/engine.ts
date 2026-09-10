@@ -1,16 +1,30 @@
 // Motor de Snake diseñado desde cero (sin fuente de código de partida, ver spec 09).
 // Sprites de fruta cargados desde reference/snake-assets/, servidos vía public/games/serpentina/.
 
-import type { GameCallbacks, GameEngine } from "@/lib/games/types";
+import type { GameCallbacks, GameEngine, Skin } from "@/lib/games/types";
 import {
   FRUIT_NAMES,
   FRUIT_SHEET_SRC,
   FRUIT_SPRITES,
 } from "@/lib/games/serpentina/sprites";
 
-const BG_COLOR = "#050505";
-const SNAKE_HEAD_COLOR = "#aaffaa";
-const SNAKE_BODY_COLOR = "#33ff33";
+// ── Paletas por skin ──────────────────────────────────────────────────────
+// clasico reproduce el render original byte por byte (fondo #050505, cuerpo
+// #33ff33, cabeza #aaffaa, sin glow). neon/retro son skins opcionales. Las
+// frutas se dibujan siempre a color real desde fruits.png — no hay rol de fruta.
+type SerpentinaPalette = {
+  bg: string; // fillRect de fondo del tablero
+  body: string; // segmentos del cuerpo (i > 0)
+  head: string; // segmento de cabeza (i === 0)
+  glow: number; // ctx.shadowBlur de los segmentos (0 = sin glow); shadowColor = color del segmento
+};
+
+const PALETTES: Record<Skin, SerpentinaPalette> = {
+  clasico: { bg: "#050505", body: "#33ff33", head: "#aaffaa", glow: 0 },
+  neon: { bg: "#000000", body: "#00ff88", head: "#f5ff00", glow: 8 },
+  retro: { bg: "#000000", body: "#33ff33", head: "#d8ffd8", glow: 5 },
+};
+
 const CELL_GAP = 1; // separación visual entre segmentos de la grilla
 
 type Point = { x: number; y: number };
@@ -38,8 +52,10 @@ const randomFruitName = () => FRUIT_NAMES[randInt(0, FRUIT_NAMES.length - 1)];
 export function createSerpentinaEngine(
   canvas: HTMLCanvasElement,
   callbacks: GameCallbacks,
+  skin: Skin = "clasico",
 ): GameEngine {
   const ctx = getContext2D(canvas);
+  const pal = PALETTES[skin];
 
   const fruitSheet = new Image();
   fruitSheet.src = FRUIT_SHEET_SRC;
@@ -129,11 +145,14 @@ export function createSerpentinaEngine(
   }
 
   function draw() {
-    ctx.fillStyle = BG_COLOR;
+    ctx.fillStyle = pal.bg;
     ctx.fillRect(0, 0, COLS * CELL, ROWS * CELL);
 
+    if (pal.glow > 0) ctx.shadowBlur = pal.glow;
     snake.forEach((seg, i) => {
-      ctx.fillStyle = i === 0 ? SNAKE_HEAD_COLOR : SNAKE_BODY_COLOR;
+      const segColor = i === 0 ? pal.head : pal.body;
+      ctx.fillStyle = segColor;
+      if (pal.glow > 0) ctx.shadowColor = segColor;
       ctx.fillRect(
         seg.x * CELL + CELL_GAP,
         seg.y * CELL + CELL_GAP,
@@ -141,6 +160,7 @@ export function createSerpentinaEngine(
         CELL - CELL_GAP * 2,
       );
     });
+    if (pal.glow > 0) ctx.shadowBlur = 0; // la fruta se dibuja sin glow
 
     const rect = FRUIT_SPRITES[fruit.sprite];
     if (rect && fruitSheet.complete) {

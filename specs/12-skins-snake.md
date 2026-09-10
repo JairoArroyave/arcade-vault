@@ -1,6 +1,6 @@
 # SPEC 12 — Skins de Snake (`serpentina`)
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 09, SPEC 10
 > **Date:** 2026-09-09
 > **Objective:** Añadir las skins `neon` y `retro` al motor de Snake (`serpentina`) reutilizando el andamiaje ya montado en SPEC 10, consolidando su paleta en una tabla indexada por skin con `clasico` idéntico al render actual byte por byte, y cableando el 3er parámetro `skin` a través de `SerpentinaGame.tsx`.
