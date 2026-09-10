@@ -7,6 +7,24 @@ import type { Game } from "@/lib/games";
 import { saveScore } from "@/lib/leaderboard-client";
 import { useAuth } from "@/app/providers";
 import { REAL_GAMES } from "@/components/games/registry";
+import { DEFAULT_SKIN, SKINS, type Skin } from "@/lib/games/types";
+
+const SKIN_KEY = "av_skin";
+const SKIN_LABELS: Record<Skin, string> = {
+  clasico: "CLÁSICO",
+  neon: "NEÓN",
+  retro: "RETRO",
+};
+
+function readStoredSkin(): Skin {
+  if (typeof window === "undefined") return DEFAULT_SKIN;
+  try {
+    const raw = window.localStorage.getItem(SKIN_KEY);
+    return SKINS.includes(raw as Skin) ? (raw as Skin) : DEFAULT_SKIN;
+  } catch {
+    return DEFAULT_SKIN;
+  }
+}
 
 export default function GamePlayerClient({ game }: { game: Game }) {
   const router = useRouter();
@@ -23,6 +41,21 @@ export default function GamePlayerClient({ game }: { game: Game }) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [resetKey, setResetKey] = useState(0);
+
+  // Skin del motor: se inicializa leyendo localStorage["av_skin"] (un valor
+  // inválido cae a DEFAULT_SKIN), así el motor arranca directo en la skin
+  // guardada sin parpadeo. El servidor no ve localStorage, por lo que el estado
+  // activo del selector se marca con suppressHydrationWarning.
+  const [skin, setSkin] = useState<Skin>(readStoredSkin);
+
+  const changeSkin = (next: Skin) => {
+    setSkin(next);
+    try {
+      window.localStorage.setItem(SKIN_KEY, next);
+    } catch {
+      // localStorage no disponible (navegación privada, etc.): no persiste.
+    }
+  };
 
   // Nivel derivado del puntaje para los juegos simulados; los juegos reales reportan su nivel real.
   const level = realGame ? realLevel : 1 + Math.floor(score / 2500);
@@ -101,6 +134,30 @@ export default function GamePlayerClient({ game }: { game: Game }) {
               <div className="v">{String(level).padStart(2, "0")}</div>
             </div>
           )}
+          {realGame && (
+            <div className="hud-stat">
+              <div className="l">Skin</div>
+              <div className="v" style={{ display: "flex", gap: 6 }}>
+                {SKINS.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    suppressHydrationWarning
+                    className={`btn${s === skin ? "" : " ghost"}`}
+                    style={{
+                      padding: "6px 10px",
+                      fontSize: 9,
+                      letterSpacing: "0.1em",
+                    }}
+                    aria-pressed={s === skin}
+                    onClick={() => changeSkin(s)}
+                  >
+                    {SKIN_LABELS[s]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <div className="hud-actions">
           <button className="btn yellow" onClick={() => setPaused((p) => !p)}>
@@ -126,6 +183,7 @@ export default function GamePlayerClient({ game }: { game: Game }) {
                 onLevelChange={setRealLevel}
                 onGameOver={handleRealGameOver}
                 resetKey={resetKey}
+                skin={skin}
               />
             </div>
           ) : (

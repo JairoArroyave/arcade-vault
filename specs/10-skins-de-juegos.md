@@ -1,6 +1,6 @@
 # SPEC 10 — Sistema de skins de juegos (piloto en `rocas`)
 
-> **Status:** approved
+> **Status:** implemented
 > **Depends on:** SPEC 05, SPEC 07
 > **Date:** 2026-09-09
 > **Objective:** Introducir el contrato de skins (`clasico` / `neon` / `retro`) para los juegos reales del reproductor y cablearlo de punta a punta en el juego de Asteroides (`rocas`), dejando `clasico` idéntico al render actual y `neon`/`retro` como skins opcionales legibles sobre el fondo negro con scanlines del `.crt-screen`.
@@ -296,19 +296,19 @@ Revisión final: `npm run lint` y `npm run build` sin errores.
 
 ## Acceptance criteria
 
-- [ ] `lib/games/types.ts` exporta `Skin = "clasico" | "neon" | "retro"`, `SKINS` y `DEFAULT_SKIN`.
-- [ ] `RealGameProps` incluye `skin: Skin`; `GamePlayerClient` se lo pasa a todo componente de `REAL_GAMES`.
-- [ ] `createAsteroidsEngine` acepta un 3er parámetro `skin: Skin = "clasico"` y no rompe a ningún llamador que no lo pase.
-- [ ] Con skin `clasico`, `/games/rocas/play` se ve **idéntico** al render previo a este spec: nave, balas y asteroides `#ffffff`; llama `#ff8200` al `85%`; partículas blancas con alfa `ttl/life`; power-up `#00ffff`; sin `shadowBlur` (chequeo de regresión).
-- [ ] La skin `neon` de `rocas` dibuja: nave `#00f5ff`, llama `#f5ff00`, balas `#ff3d92`, asteroides `#e6e9ff`, partículas `#f5ff00`, power-up `#00ff88`, con `shadowBlur` de refuerzo.
-- [ ] La skin `retro` de `rocas` dibuja todo en fósforo verde con la escalera de brillo: asteroides `#33ff33` (tono base) más oscuros que la nave `#b6ffb6` y que balas/llama `#e6ffe6`; power-up `#9dff9d` intermedio.
-- [ ] Las tres skins de `rocas` cumplen los cinco criterios de legibilidad sobre el `.crt-screen` (fondo `#000` + scanlines `multiply` ~18% + viñeta): contraste ≥ 3:1 para siluetas y ≥ 4.5:1 para balas/partículas contra `#000`; ninguna entidad jugable comparte tono con el fondo; quitar el glow no vuelve indistinguibles las piezas; en `retro` la jerarquía se resuelve por brillo; y ninguna skin altera resolución, gameplay ni HUD.
-- [ ] Cambiar de skin no altera la resolución lógica (800×600), la física, los controles, el sistema de puntos (20/50/100) ni el HUD/chrome del reproductor.
-- [ ] La skin elegida se persiste en `localStorage["av_skin"]` y se respeta al recargar y al volver a entrar a `/games/rocas/play`; un valor inválido cae a `clasico`.
-- [ ] El selector de skin no aparece para los juegos sin entrada en `REAL_GAMES`, y esos juegos (decorativos) no cambian visual ni funcionalmente.
-- [ ] `caida`, `bloque-buster` y `serpentina` no cambian su render: reciben `skin` pero su paleta actual sigue siendo la que se dibuja (su `clasico` implícito hasta su propio spec).
-- [ ] `.claude/skills/integrar-juego/contract.md` §1/§5 queda actualizado al texto de "default `clasico` preserva la paleta original; `neon`/`retro` opcionales vía parámetro `skin`".
-- [ ] `npm run lint` y `npm run build` terminan sin errores.
+- [x] `lib/games/types.ts` exporta `Skin = "clasico" | "neon" | "retro"`, `SKINS` y `DEFAULT_SKIN`.
+- [x] `RealGameProps` incluye `skin: Skin`; `GamePlayerClient` se lo pasa a todo componente de `REAL_GAMES`.
+- [x] `createAsteroidsEngine` acepta un 3er parámetro `skin: Skin = "clasico"` y no rompe a ningún llamador que no lo pase.
+- [x] Con skin `clasico`, `/games/rocas/play` se ve **idéntico** al render previo a este spec: nave, balas y asteroides `#ffffff`; llama `#ff8200` al `85%`; partículas blancas con alfa `ttl/life`; power-up `#00ffff`; sin `shadowBlur` (chequeo de regresión). _(El alfa de partículas pasa de redondeado a 2 decimales a precisión completa — cambio sub-perceptible prescrito por el Data model / Paso 3.)_
+- [x] La skin `neon` de `rocas` dibuja: nave `#00f5ff`, llama `#f5ff00`, balas `#ff3d92`, asteroides `#e6e9ff`, partículas `#f5ff00`, power-up `#00ff88`, con `shadowBlur` de refuerzo.
+- [x] La skin `retro` de `rocas` dibuja todo en fósforo verde con la escalera de brillo: asteroides `#33ff33` (tono base) más oscuros que la nave `#b6ffb6` y que balas/llama `#e6ffe6`; power-up `#9dff9d` intermedio.
+- [x] Las tres skins de `rocas` cumplen los cinco criterios de legibilidad sobre el `.crt-screen` (fondo `#000` + scanlines `multiply` ~18% + viñeta): contraste ≥ 3:1 para siluetas y ≥ 4.5:1 para balas/partículas contra `#000`; ninguna entidad jugable comparte tono con el fondo; quitar el glow no vuelve indistinguibles las piezas; en `retro` la jerarquía se resuelve por brillo; y ninguna skin altera resolución, gameplay ni HUD.
+- [x] Cambiar de skin no altera la resolución lógica (800×600), la física, los controles, el sistema de puntos (20/50/100) ni el HUD/chrome del reproductor.
+- [x] La skin elegida se persiste en `localStorage["av_skin"]` y se respeta al recargar y al volver a entrar a `/games/rocas/play`; un valor inválido cae a `clasico`.
+- [x] El selector de skin no aparece para los juegos sin entrada en `REAL_GAMES`, y esos juegos (decorativos) no cambian visual ni funcionalmente.
+- [x] `caida`, `bloque-buster` y `serpentina` no cambian su render: reciben `skin` pero su paleta actual sigue siendo la que se dibuja (su `clasico` implícito hasta su propio spec).
+- [x] `.claude/skills/integrar-juego/contract.md` §1/§5 queda actualizado al texto de "default `clasico` preserva la paleta original; `neon`/`retro` opcionales vía parámetro `skin`". _(§1: viñeta de paleta + firma de la factory. §2 sincronizado además: `RealGameProps.skin` y el efecto `[resetKey, skin]`.)_
+- [x] `npm run lint` y `npm run build` terminan sin errores.
 
 ---
 

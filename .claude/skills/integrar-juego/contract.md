@@ -37,6 +37,7 @@ export type GameEngine = {
 export function createXEngine(
   canvas: HTMLCanvasElement,
   callbacks: GameCallbacks,
+  skin?: Skin, // "clasico" (default) | "neon" | "retro" — lib/games/types.ts; el default deja el render idéntico al de antes del sistema de skins
 ): GameEngine;
 ```
 
@@ -55,7 +56,9 @@ cualquier juego nuevo):
   (como el input de iniciales del modal de fin de partida).
 - Resolución lógica interna fija (ancho×alto propios del juego original); el escalado visual
   se resuelve por CSS (sección 5), no cambiando la resolución interna.
-- Paleta de colores original preservada — nunca recoloreada al tema neon del sitio.
+- El skin por defecto (`clasico`) preserva la paleta original del motor byte por byte; `neon`
+  y `retro` son skins opcionales que el motor expone vía el 3er parámetro `skin: Skin`
+  (`lib/games/types.ts`). El default deja el render idéntico al de antes del sistema de skins.
 
 ## 2. Contrato del wrapper de React (`components/games/<PascalName>Game.tsx`)
 
@@ -64,6 +67,7 @@ cualquier juego nuevo):
 export type RealGameProps = GameCallbacks & {
   paused: boolean;
   resetKey: number; // cambiar este valor fuerza destroy()+create() del motor (usado por "JUGAR DE NUEVO")
+  skin: Skin;       // skin activa (lib/games/types.ts); cambiarla también fuerza destroy()+create() y se pasa como 3er arg a createXEngine
 };
 ```
 
@@ -74,10 +78,10 @@ Patrón de implementación (idéntico al ya usado por `components/games/Asteroid
 - `callbacksRef`: los callbacks más recientes se guardan en un ref, actualizado en cada
   render vía un efecto sin dependencias — así el efecto que crea el motor no necesita los
   callbacks en su lista de dependencias y no recrea el motor en cada render del padre.
-- Efecto principal con `[resetKey]` como dependencia: crea el motor con
-  `createXEngine(canvas, { ...forward a callbacksRef.current })`, lo guarda en un ref, y en el
-  cleanup llama a `engine.destroy()`. Cambiar `resetKey` destruye y recrea el motor entero
-  (reset completo, no se usa `engine.reset()` desde aquí).
+- Efecto principal con `[resetKey, skin]` como dependencias: crea el motor con
+  `createXEngine(canvas, { ...forward a callbacksRef.current }, skin)`, lo guarda en un ref, y
+  en el cleanup llama a `engine.destroy()`. Cambiar `resetKey` **o** `skin` destruye y recrea
+  el motor entero (reset completo, no se usa `engine.reset()` desde aquí).
 - Efecto separado con `[paused]` como dependencia: llama a `engineRef.current?.setPaused(paused)`.
 
 ## 3. Capacidades declaradas por juego
