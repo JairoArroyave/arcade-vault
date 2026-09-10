@@ -2,7 +2,7 @@
 // en vez de document/window a nivel de módulo, todo vive dentro de createAsteroidsEngine()
 // para poder crear y destruir instancias al montar/desmontar el componente React.
 
-import type { GameCallbacks, GameEngine } from "@/lib/games/types";
+import type { GameCallbacks, GameEngine, Skin } from "@/lib/games/types";
 
 const W = 800;
 const H = 600;
@@ -11,11 +11,74 @@ const RADII = [0, 16, 30, 50]; // por tamaño 1, 2, 3
 const SPEEDS = [0, 85, 55, 32];
 const POINTS = [0, 100, 50, 20];
 
+// ── Paletas por skin ──────────────────────────────────────────────────────
+// clasico reproduce el render original byte por byte (mismos hex, mismo alfa de
+// la llama, mismo alfa dinámico de partículas, sin glow). neon y retro son
+// skins opcionales legibles sobre el fondo negro con scanlines del .crt-screen.
+type RocasPalette = {
+  bg: string; // fillRect de fondo en draw()
+  ship: string; // trazo del casco de la nave (lineWidth 1.5)
+  thrust: string; // color base de la llama del propulsor
+  thrustAlpha: number; // alfa fijo de la llama (0.85 en el original)
+  bullet: string; // relleno de las balas (radius 2)
+  asteroid: string; // trazo del polígono de cada asteroide (lineWidth 1.5)
+  particle: string; // color base de las partículas; el alfa es runtime (ttl/life)
+  powerup: string; // trazo del anillo + rayos del power-up "Disparo Triple"
+  glow: number; // ctx.shadowBlur de siluetas (0 = sin glow); shadowColor = color del rol
+};
+
+const PALETTES: Record<Skin, RocasPalette> = {
+  clasico: {
+    bg: "#000000",
+    ship: "#ffffff",
+    thrust: "#ff8200",
+    thrustAlpha: 0.85,
+    bullet: "#ffffff",
+    asteroid: "#ffffff",
+    particle: "#ffffff",
+    powerup: "#00ffff",
+    glow: 0,
+  },
+  neon: {
+    bg: "#000000",
+    ship: "#00f5ff",
+    thrust: "#f5ff00",
+    thrustAlpha: 0.85,
+    bullet: "#ff3d92",
+    asteroid: "#e6e9ff",
+    particle: "#f5ff00",
+    powerup: "#00ff88",
+    glow: 8,
+  },
+  retro: {
+    bg: "#000000",
+    ship: "#b6ffb6",
+    thrust: "#e6ffe6",
+    thrustAlpha: 0.85,
+    bullet: "#e6ffe6",
+    asteroid: "#33ff33",
+    particle: "#66ff66",
+    powerup: "#9dff9d",
+    glow: 5,
+  },
+};
+
 const wrap = (v: number, max: number) => ((v % max) + max) % max;
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }) =>
   Math.hypot(a.x - b.x, a.y - b.y);
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
 const randInt = (min: number, max: number) => Math.floor(rand(min, max + 1));
+
+// withAlpha("#f5ff00", 0.42) -> "rgba(245,255,0,0.42)"
+// Compone el rgba de un rol de la paleta con un alfa (fijo o runtime), preservando
+// la fórmula de desvanecido actual de Particle.draw y Ship.draw.
+function withAlpha(hex: string, a: number): string {
+  const h = hex.replace("#", "");
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${a})`;
+}
 
 function getContext2D(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
   const ctx = canvas.getContext("2d");
@@ -26,8 +89,10 @@ function getContext2D(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
 export function createAsteroidsEngine(
   canvas: HTMLCanvasElement,
   callbacks: GameCallbacks,
+  skin: Skin = "clasico",
 ): GameEngine {
   const ctx = getContext2D(canvas);
+  const pal = PALETTES[skin];
 
   const keys: Record<string, boolean> = {};
   const justPressed: Record<string, boolean> = {};
@@ -82,7 +147,7 @@ export function createAsteroidsEngine(
     }
 
     draw() {
-      ctx.fillStyle = "#fff";
+      ctx.fillStyle = pal.bullet;
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
       ctx.fill();
@@ -141,7 +206,11 @@ export function createAsteroidsEngine(
       ctx.save();
       ctx.translate(this.x, this.y);
       ctx.rotate(this.rot);
-      ctx.strokeStyle = "#fff";
+      if (pal.glow > 0) {
+        ctx.shadowBlur = pal.glow;
+        ctx.shadowColor = pal.asteroid;
+      }
+      ctx.strokeStyle = pal.asteroid;
       ctx.lineWidth = 1.5;
       ctx.lineJoin = "round";
       ctx.beginPath();
@@ -229,7 +298,11 @@ export function createAsteroidsEngine(
       ctx.save();
       ctx.translate(this.x, this.y);
       ctx.rotate(this.angle);
-      ctx.strokeStyle = "#fff";
+      if (pal.glow > 0) {
+        ctx.shadowBlur = pal.glow;
+        ctx.shadowColor = pal.ship;
+      }
+      ctx.strokeStyle = pal.ship;
       ctx.lineWidth = 1.5;
       ctx.lineJoin = "round";
 
@@ -246,7 +319,7 @@ export function createAsteroidsEngine(
         ctx.moveTo(-8, -4);
         ctx.lineTo(-8 - rand(6, 14), 0);
         ctx.lineTo(-8, 4);
-        ctx.strokeStyle = "rgba(255, 130, 0, 0.85)";
+        ctx.strokeStyle = withAlpha(pal.thrust, pal.thrustAlpha);
         ctx.stroke();
       }
 
@@ -284,7 +357,7 @@ export function createAsteroidsEngine(
 
     draw() {
       const alpha = this.ttl / this.life;
-      ctx.strokeStyle = `rgba(255,255,255,${alpha.toFixed(2)})`;
+      ctx.strokeStyle = withAlpha(pal.particle, alpha);
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(this.x, this.y);
@@ -333,7 +406,11 @@ export function createAsteroidsEngine(
       ctx.translate(this.x, this.y);
       ctx.rotate(this.rot);
       ctx.scale(scale, scale);
-      ctx.strokeStyle = "#0ff";
+      if (pal.glow > 0) {
+        ctx.shadowBlur = pal.glow;
+        ctx.shadowColor = pal.powerup;
+      }
+      ctx.strokeStyle = pal.powerup;
       ctx.lineWidth = 1.5;
 
       ctx.beginPath();
@@ -516,7 +593,7 @@ export function createAsteroidsEngine(
 
   // ── Draw ─────────────────────────────────────────────────────────────────
   function draw() {
-    ctx.fillStyle = "#000";
+    ctx.fillStyle = pal.bg;
     ctx.fillRect(0, 0, W, H);
 
     particles.forEach((p) => p.draw());

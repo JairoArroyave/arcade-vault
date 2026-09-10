@@ -10,7 +10,7 @@
 // HUD/overlay de fin de partida y el reinicio propio por tecla/click — ver
 // specs/08-juego-arkanoid-real.md, sección Decisions.
 
-import type { GameCallbacks, GameEngine } from "@/lib/games/types";
+import type { GameCallbacks, GameEngine, Skin } from "@/lib/games/types";
 import {
   SPRITES,
   EXPLOSION_FRAMES,
@@ -70,6 +70,69 @@ type Explosion = {
   startTime: number;
 };
 
+// ── Paletas por skin ──────────────────────────────────────────────────────
+// El motor de Arkanoid no dibuja nada vectorial: paleta, pelota, ladrillos y
+// explosiones salen del spritesheet. clasico (tint: null) lo dibuja sin tocar;
+// neon/retro tiñen el spritesheet una sola vez (ver "atlas teñido", más abajo).
+type ArkanoidTint = {
+  blocks: Record<BlockColor, string>; // un hex por fila del tablero
+  paddle: string;
+  ball: string;
+  // las explosiones heredan el tinte de blocks[color] (mismo color que su ladrillo)
+};
+
+type ArkanoidPalette = {
+  tint: ArkanoidTint | null; // null = spritesheet original (clasico)
+  overlayScrim: string; // fillRect de drawStartOverlay (dim, no color)
+  overlayText: string; // color del texto "Choose difficulty" / "1: Easy ..."
+  glow: number; // ctx.shadowBlur de sprites y texto (0 = sin glow); shadowColor = color del rol
+};
+
+const PALETTES: Record<Skin, ArkanoidPalette> = {
+  clasico: {
+    tint: null,
+    overlayScrim: "rgba(0, 0, 0, 0.6)",
+    overlayText: "#ffffff",
+    glow: 0,
+  },
+  neon: {
+    tint: {
+      blocks: {
+        red: "#ff3355",
+        yellow: "#f5ff00",
+        green: "#00b3ff",
+        cyan: "#00f5ff",
+        magenta: "#b26bff",
+        hotpink: "#ff8a00",
+        gray: "#e6e9ff",
+      },
+      paddle: "#00ff88",
+      ball: "#ffffff",
+    },
+    overlayScrim: "rgba(0, 0, 0, 0.6)",
+    overlayText: "#00f5ff",
+    glow: 8,
+  },
+  retro: {
+    tint: {
+      blocks: {
+        red: "#40d840",
+        yellow: "#40d840",
+        green: "#40d840",
+        cyan: "#40d840",
+        magenta: "#40d840",
+        hotpink: "#40d840",
+        gray: "#40d840",
+      },
+      paddle: "#b6ffb6",
+      ball: "#e6ffe6",
+    },
+    overlayScrim: "rgba(0, 0, 0, 0.6)",
+    overlayText: "#66ff66",
+    glow: 4,
+  },
+};
+
 function getContext2D(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("No se pudo obtener el contexto 2D del canvas");
@@ -79,8 +142,10 @@ function getContext2D(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
 export function createArkanoidEngine(
   canvas: HTMLCanvasElement,
   callbacks: GameCallbacks, // hasLevel es false para este juego: nunca llama onLevelChange
+  skin: Skin = "clasico",
 ): GameEngine {
   const ctx = getContext2D(canvas);
+  const pal = PALETTES[skin];
 
   let paddle: Paddle = { ...INITIAL_PADDLE };
   let ball: Ball = { ...INITIAL_BALL };
@@ -259,6 +324,52 @@ export function createArkanoidEngine(
   // ── Dibujo ───────────────────────────────────────────────────────────────
   const image = new Image();
   let imageLoaded = false;
+  // Atlas teñido offscreen: se construye una sola vez en image.onload cuando la
+  // skin trae tint (neon/retro). clasico deja tinted en null y se dibuja el PNG.
+  let tinted: HTMLCanvasElement | null = null;
+
+  type SpriteRect = { sx: number; sy: number; sw: number; sh: number };
+
+  // Tiñe un sprite del spritesheet dentro del canvas offscreen: dibuja el sprite
+  // original y luego, con "source-in", lo rellena de un color plano conservando
+  // el alfa de los bordes. Se pierde el bisel/contorno del PNG (look neón plano).
+  function tintRectInto(
+    octx: CanvasRenderingContext2D,
+    img: HTMLImageElement,
+    r: SpriteRect,
+    color: string,
+  ) {
+    octx.save();
+    octx.beginPath();
+    octx.rect(r.sx, r.sy, r.sw, r.sh);
+    octx.clip(); // limita la escritura a este sprite
+    octx.globalCompositeOperation = "source-over";
+    octx.drawImage(img, r.sx, r.sy, r.sw, r.sh, r.sx, r.sy, r.sw, r.sh);
+    octx.globalCompositeOperation = "source-in"; // relleno solo donde el sprite es opaco
+    octx.fillStyle = color;
+    octx.fillRect(r.sx, r.sy, r.sw, r.sh);
+    octx.restore();
+  }
+
+  function buildTintedAtlas(
+    img: HTMLImageElement,
+    tint: ArkanoidTint,
+  ): HTMLCanvasElement {
+    const off = document.createElement("canvas");
+    off.width = img.naturalWidth;
+    off.height = img.naturalHeight;
+    const octx = off.getContext("2d");
+    if (!octx) return off;
+    tintRectInto(octx, img, SPRITES.paddle, tint.paddle);
+    tintRectInto(octx, img, SPRITES.ball, tint.ball);
+    for (const c of Object.keys(SPRITES.blocks) as BlockColor[]) {
+      tintRectInto(octx, img, SPRITES.blocks[c], tint.blocks[c]);
+      for (const fr of EXPLOSION_FRAMES[c]) {
+        tintRectInto(octx, img, fr, tint.blocks[c]);
+      }
+    }
+    return off;
+  }
 
   function drawSprite(
     name: "paddle" | "ball" | `block_${BlockColor}`,
@@ -272,7 +383,28 @@ export function createArkanoidEngine(
       ? SPRITES.blocks[name.slice(6) as BlockColor]
       : SPRITES[name as "paddle" | "ball"];
     if (!sprite) return;
-    ctx.drawImage(image, sprite.sx, sprite.sy, sprite.sw, sprite.sh, x, y, w, h);
+    if (pal.glow > 0 && pal.tint) {
+      ctx.save();
+      ctx.shadowBlur = pal.glow;
+      ctx.shadowColor =
+        name === "paddle"
+          ? pal.tint.paddle
+          : name === "ball"
+            ? pal.tint.ball
+            : pal.tint.blocks[name.slice(6) as BlockColor];
+    }
+    ctx.drawImage(
+      tinted ?? image,
+      sprite.sx,
+      sprite.sy,
+      sprite.sw,
+      sprite.sh,
+      x,
+      y,
+      w,
+      h,
+    );
+    if (pal.glow > 0 && pal.tint) ctx.restore();
   }
 
   function drawFrame(
@@ -281,9 +413,26 @@ export function createArkanoidEngine(
     y: number,
     w: number,
     h: number,
+    color: BlockColor,
   ) {
     if (!imageLoaded) return;
-    ctx.drawImage(image, frame.sx, frame.sy, frame.sw, frame.sh, x, y, w, h);
+    if (pal.glow > 0 && pal.tint) {
+      ctx.save();
+      ctx.shadowBlur = pal.glow;
+      ctx.shadowColor = pal.tint.blocks[color];
+    }
+    ctx.drawImage(
+      tinted ?? image,
+      frame.sx,
+      frame.sy,
+      frame.sw,
+      frame.sh,
+      x,
+      y,
+      w,
+      h,
+    );
+    if (pal.glow > 0 && pal.tint) ctx.restore();
   }
 
   function drawBricks() {
@@ -308,6 +457,7 @@ export function createArkanoidEngine(
         explosion.y,
         explosion.w,
         explosion.h,
+        explosion.color,
       );
     }
   }
@@ -327,15 +477,21 @@ export function createArkanoidEngine(
   }
 
   function drawStartOverlay() {
-    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    ctx.fillStyle = pal.overlayScrim;
     ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = "#fff";
+    ctx.fillStyle = pal.overlayText;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
+    if (pal.glow > 0) {
+      ctx.save();
+      ctx.shadowBlur = pal.glow;
+      ctx.shadowColor = pal.overlayText;
+    }
     ctx.font = "32px sans-serif";
     ctx.fillText("Choose difficulty", W / 2, H / 2 - 40);
     ctx.font = "20px sans-serif";
     ctx.fillText("1: Easy   2: Medium   3: Hard", W / 2, H / 2 + 10);
+    if (pal.glow > 0) ctx.restore();
   }
 
   function draw() {
@@ -398,6 +554,7 @@ export function createArkanoidEngine(
   initGame();
   image.onload = () => {
     imageLoaded = true;
+    if (pal.tint) tinted = buildTintedAtlas(image, pal.tint);
     if (!destroyed) rafId = requestAnimationFrame(loop);
   };
   image.onerror = () => console.error("No se pudo cargar el spritesheet de Arkanoid");

@@ -12,6 +12,7 @@ export default function SerpentinaGame({
   onLevelChange,
   onGameOver,
   resetKey,
+  skin,
 }: RealGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<GameEngine | null>(null);
@@ -35,19 +36,24 @@ export default function SerpentinaGame({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const engine = createSerpentinaEngine(canvas, {
-      onScoreChange: (score) => callbacksRef.current.onScoreChange(score),
-      onLivesChange: (lives) => callbacksRef.current.onLivesChange?.(lives),
-      onLevelChange: (level) => callbacksRef.current.onLevelChange?.(level),
-      onGameOver: (finalScore) => callbacksRef.current.onGameOver(finalScore),
-    });
+    const engine = createSerpentinaEngine(
+      canvas,
+      {
+        onScoreChange: (score) => callbacksRef.current.onScoreChange(score),
+        onLivesChange: (lives) => callbacksRef.current.onLivesChange?.(lives),
+        onLevelChange: (level) => callbacksRef.current.onLevelChange?.(level),
+        onGameOver: (finalScore) => callbacksRef.current.onGameOver(finalScore),
+      },
+      skin,
+    );
     engineRef.current = engine;
 
     return () => {
       engine.destroy();
       engineRef.current = null;
     };
-  }, [resetKey]);
+    // Cambiar de skin reinstancia el motor (reset completo), igual que "JUGAR DE NUEVO".
+  }, [resetKey, skin]);
 
   useEffect(() => {
     engineRef.current?.setPaused(paused);
