@@ -15,7 +15,7 @@ Skins obligatorias por juego real: `clasico` (default) · `neon` · `retro`.
 | --- | ---------- | ---------------- | -------------------------- | -------------------------- |
 | A01 | 2026-09-09 | `rocas`          | `specs/10-skins-de-juegos.md` | Implementada (specs/10)     |
 | A02 | 2026-09-09 | `bloque-buster`  | `specs/11-skins-arkanoid.md`  | Implementada (specs/11)     |
-| A03 | 2026-09-09 | `serpentina`     | `specs/12-skins-snake.md`     | Auditada (specs/12) — Draft |
+| A03 | 2026-09-09 | `serpentina`     | `specs/12-skins-snake.md`     | Implementada (specs/12)     |
 
 ## Auditorías
 
@@ -162,7 +162,7 @@ Skins obligatorias por juego real: `clasico` (default) · `neon` · `retro`.
 
 ### A03 — Auditoría 2026-09-09
 
-- **Estado:** Auditada (specs/12-skins-snake.md) — Draft.
+- **Estado:** Implementada (specs/12-skins-snake.md).
 - **Alcance de la pasada:** solo `serpentina` (Snake). Reutiliza el andamiaje compartido de
   SPEC 10 (tipo `Skin`, `RealGameProps.skin`, selector + persistencia en
   `localStorage["av_skin"]`, `contract.md` §1/§2 ya actualizados); **este spec no lo re-toca**.

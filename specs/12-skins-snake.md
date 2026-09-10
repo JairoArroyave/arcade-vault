@@ -242,19 +242,19 @@ Revisión final: `npm run lint` y `npm run build` sin errores.
 
 ## Acceptance criteria
 
-- [ ] `createSerpentinaEngine` acepta un 3er parámetro `skin: Skin = "clasico"` y no rompe a ningún llamador que no lo pase.
-- [ ] `SerpentinaGame.tsx` desestructura `skin` de `RealGameProps` y lo pasa al motor; el `useEffect` de creación depende de `[resetKey, skin]` y el de `[paused]` no cambia.
-- [ ] Con skin `clasico`, `/games/serpentina/play` se ve **idéntico** al render previo a este spec: fondo `#050505`; cuerpo `#33ff33`; cabeza `#aaffaa`; frutas con su sprite a color real; sin `shadowBlur` (chequeo de regresión).
-- [ ] La skin `neon` de `serpentina` dibuja: fondo `#000000`, cuerpo `#00ff88` (`--green`), cabeza `#f5ff00` (`--yellow`), con `shadowBlur 8` de refuerzo; frutas a color real.
-- [ ] La skin `retro` de `serpentina` dibuja: fondo `#000000`, cuerpo `#33ff33` (tono base), cabeza `#d8ffd8` (más clara que el cuerpo → jerarquía por brillo), con `shadowBlur 5`; frutas a color real.
-- [ ] En las tres skins la cabeza se distingue del cuerpo: por tono y brillo en `neon`, por brillo en `clasico` y `retro`.
-- [ ] Las tres skins cumplen los cinco criterios de legibilidad sobre el `.crt-screen` (fondo `#000` + scanlines `multiply` ~18% + viñeta): contraste ≥ 3:1 para los segmentos (siluetas) contra `#000`; ninguna entidad jugable comparte tono con el fondo; quitar el glow no vuelve indistinguibles cuerpo, cabeza y fruta; en `retro` la jerarquía se resuelve por brillo; y ninguna skin altera resolución, gameplay ni HUD.
-- [ ] Las frutas se dibujan con su sprite a color real en las tres skins; `public/games/serpentina/fruits.png` no se modifica ni se tinta.
-- [ ] Cambiar de skin no altera la resolución lógica (600×450), la velocidad por nivel, los controles, el sistema de puntos (10 por fruta, nivel cada 5 frutas) ni el HUD/chrome del reproductor.
-- [ ] La skin elegida se persiste en `localStorage["av_skin"]` (andamiaje de SPEC 10, sin cambios aquí) y se respeta al recargar y al volver a entrar a `/games/serpentina/play`.
-- [ ] El andamiaje compartido de SPEC 10 (tipo `Skin`, `RealGameProps.skin`, selector, persistencia, `contract.md`) no se modifica en este spec.
-- [ ] `caida`, `bloque-buster` y los juegos decorativos no cambian su render.
-- [ ] `npm run lint` y `npm run build` terminan sin errores.
+- [x] `createSerpentinaEngine` acepta un 3er parámetro `skin: Skin = "clasico"` y no rompe a ningún llamador que no lo pase.
+- [x] `SerpentinaGame.tsx` desestructura `skin` de `RealGameProps` y lo pasa al motor; el `useEffect` de creación depende de `[resetKey, skin]` y el de `[paused]` no cambia.
+- [x] Con skin `clasico`, `/games/serpentina/play` se ve **idéntico** al render previo a este spec: fondo `#050505`; cuerpo `#33ff33`; cabeza `#aaffaa`; frutas con su sprite a color real; sin `shadowBlur` (chequeo de regresión).
+- [x] La skin `neon` de `serpentina` dibuja: fondo `#000000`, cuerpo `#00ff88` (`--green`), cabeza `#f5ff00` (`--yellow`), con `shadowBlur 8` de refuerzo; frutas a color real.
+- [x] La skin `retro` de `serpentina` dibuja: fondo `#000000`, cuerpo `#33ff33` (tono base), cabeza `#d8ffd8` (más clara que el cuerpo → jerarquía por brillo), con `shadowBlur 5`; frutas a color real.
+- [x] En las tres skins la cabeza se distingue del cuerpo: por tono y brillo en `neon`, por brillo en `clasico` y `retro`.
+- [x] Las tres skins cumplen los cinco criterios de legibilidad sobre el `.crt-screen` (fondo `#000` + scanlines `multiply` ~18% + viñeta): contraste ≥ 3:1 para los segmentos (siluetas) contra `#000`; ninguna entidad jugable comparte tono con el fondo; quitar el glow no vuelve indistinguibles cuerpo, cabeza y fruta; en `retro` la jerarquía se resuelve por brillo; y ninguna skin altera resolución, gameplay ni HUD.
+- [x] Las frutas se dibujan con su sprite a color real en las tres skins; `public/games/serpentina/fruits.png` no se modifica ni se tinta.
+- [x] Cambiar de skin no altera la resolución lógica (600×450), la velocidad por nivel, los controles, el sistema de puntos (10 por fruta, nivel cada 5 frutas) ni el HUD/chrome del reproductor.
+- [x] La skin elegida se persiste en `localStorage["av_skin"]` (andamiaje de SPEC 10, sin cambios aquí) y se respeta al recargar y al volver a entrar a `/games/serpentina/play`.
+- [x] El andamiaje compartido de SPEC 10 (tipo `Skin`, `RealGameProps.skin`, selector, persistencia, `contract.md`) no se modifica en este spec.
+- [x] `caida`, `bloque-buster` y los juegos decorativos no cambian su render.
+- [x] `npm run lint` y `npm run build` terminan sin errores.
 
 ---
 
